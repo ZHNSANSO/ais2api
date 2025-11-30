@@ -1,4 +1,4 @@
-# Dockerfile (v8 最终修复版)
+# Dockerfile (v9 最终修复版)
 # 1. 基础镜像升级
 FROM node:20-slim
 
@@ -20,12 +20,11 @@ COPY package*.json ./
 RUN npm install --production
 
 # 4. 下载并解压 Camoufox 资源文件
-# 根据日志，此 zip 包不包含 camoufox 可执行文件，只包含字体和配置文件。
-# 因此，我们只解压文件，不再尝试执行 chmod 或设置相关路径。
+# - 将命令拆分为独立的 RUN 指令，以隔离 unzip 可能存在的警告级退出码
 ARG CAMOUFOX_URL="https://github.com/coryking/camoufox/releases/download/v142.0.1-fork.26/camoufox-142.0.1-fork.26-lin.x86_64.zip"
-RUN curl -sSL ${CAMOUFOX_URL} -o camoufox.zip && \
-    unzip camoufox.zip && \
-    rm camoufox.zip
+RUN curl -sSL ${CAMOUFOX_URL} -o camoufox.zip
+RUN unzip camoufox.zip
+RUN rm camoufox.zip
 
 # 5. 拷贝应用代码
 COPY unified-server.js black-browser.js models.json ./
@@ -39,5 +38,4 @@ EXPOSE 7860
 EXPOSE 9998
 
 # 8. 定义启动命令
-# 移除了 CAMOUFOX_EXECUTABLE_PATH 环境变量，因为它指向的文件不存在。
 CMD ["node", "unified-server.js"]
