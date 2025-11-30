@@ -1,13 +1,10 @@
-# Dockerfile (v7 调试版)
+# Dockerfile (v8 最终修复版)
 # 1. 基础镜像升级
 FROM node:20-slim
 
 WORKDIR /app
 
 # 2. 安装系统依赖
-# - 添加 ca-certificates 解决 curl SSL 错误
-# - 添加 unzip 用于解压 camoufox.zip
-# - 保持构建浏览器所需的基础依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     unzip \
@@ -19,23 +16,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. 拷贝 package.json 并安装依赖
-# 利用层缓存，仅在 package.json 变化时重新安装
 COPY package*.json ./
 RUN npm install --production
 
-# 4. 下载并解压 Camoufox
-# - 添加 ls -lR 命令用于调试，查看解压后的文件结构
+# 4. 下载并解压 Camoufox 资源文件
+# 根据日志，此 zip 包不包含 camoufox 可执行文件，只包含字体和配置文件。
+# 因此，我们只解压文件，不再尝试执行 chmod 或设置相关路径。
 ARG CAMOUFOX_URL="https://github.com/coryking/camoufox/releases/download/v142.0.1-fork.26/camoufox-142.0.1-fork.26-lin.x86_64.zip"
 RUN curl -sSL ${CAMOUFOX_URL} -o camoufox.zip && \
     unzip camoufox.zip && \
-    rm camoufox.zip && \
-    echo "--- Listing files after unzip ---" && \
-    ls -lR && \
-    echo "---------------------------------" && \
-    chmod +x /app/camoufox-linux/camoufox
+    rm camoufox.zip
 
 # 5. 拷贝应用代码
-# 将代码拷贝放在后面，最大化利用缓存
 COPY unified-server.js black-browser.js models.json ./
 
 # 6. 创建目录并设置精细化权限
@@ -46,8 +38,6 @@ USER node
 EXPOSE 7860
 EXPOSE 9998
 
-# 8. 设置环境变量
-ENV CAMOUFOX_EXECUTABLE_PATH=/app/camoufox-linux/camoufox
-
-# 9. 定义启动命令
+# 8. 定义启动命令
+# 移除了 CAMOUFOX_EXECUTABLE_PATH 环境变量，因为它指向的文件不存在。
 CMD ["node", "unified-server.js"]
