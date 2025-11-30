@@ -1,4 +1,4 @@
-# Dockerfile (v9 最终修复版)
+# Dockerfile (v10 最终修复版)
 # 1. 基础镜像升级
 FROM node:20-slim
 
@@ -20,10 +20,10 @@ COPY package*.json ./
 RUN npm install --production
 
 # 4. 下载并解压 Camoufox 资源文件
-# - 将命令拆分为独立的 RUN 指令，以隔离 unzip 可能存在的警告级退出码
+# - 使用 || true 来忽略 unzip 可能返回的非零退出码
 ARG CAMOUFOX_URL="https://github.com/coryking/camoufox/releases/download/v142.0.1-fork.26/camoufox-142.0.1-fork.26-lin.x86_64.zip"
 RUN curl -sSL ${CAMOUFOX_URL} -o camoufox.zip
-RUN unzip camoufox.zip
+RUN unzip camoufox.zip || true
 RUN rm camoufox.zip
 
 # 5. 拷贝应用代码
